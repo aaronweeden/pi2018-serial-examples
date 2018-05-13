@@ -80,14 +80,12 @@ void exit_if(int boolean_expression, char function_name[32], int OUR_RANK)
 int main(int argc, char **argv)
 {
   int NUMBER_OF_ROWS = 5, NUMBER_OF_COLUMNS = 5, NUMBER_OF_TIME_STEPS = 5, 
-      our_current_row, my_current_column, my_neighbor_row, my_neighbor_column,
-      my_number_of_alive_neighbors, c, return_value; 
-  int **our_current_grid, **our_next_grid;
+      current_row, current_column, neighbor_row, neighbor_column,
+      number_of_alive_neighbors, c, return_value; 
+  int **current_grid, **next_grid;
   int current_time_step;
 
-  /* I.  Initialize the distributed memory environment */
-  //deleted MPI commands for the OpenMP version
-  /* II.  Parse command line arguments */ 
+  /* Parse command line arguments */ 
   while((c = getopt(argc, argv, "r:c:t:")) != -1)
   {
     switch(c)
@@ -110,146 +108,127 @@ int main(int argc, char **argv)
   argc -= optind;
   argv += optind;
 
-  /* III.  Make sure we have enough rows, columns, and time steps */
+  /* Make sure we have enough rows, columns, and time steps */
   return_value = assert_minimum_value("row", NUMBER_OF_ROWS, MINIMUM_ROWS);
   return_value += assert_minimum_value("column", NUMBER_OF_COLUMNS,
       MINIMUM_COLUMNS);
   return_value += assert_minimum_value("time step", NUMBER_OF_TIME_STEPS,
       MINIMUM_TIME_STEPS);
 
-  /* IV.  Exit if we don't */
+  /* Exit if we don't */
   if(return_value != 0)
     exit(-1);
 
-  /* V.  Determine our number of rows */
-
-  /* VI.  Allocate enough space in our current grid and next grid for the
+  /* Allocate enough space in the current grid and next grid for the
    *  number of rows and the number of columns, plus the ghost rows
    *  and columns */
-  exit_if(((our_current_grid = (int**)malloc((NUMBER_OF_ROWS + 2) 
+  exit_if(((current_grid = (int**)malloc((NUMBER_OF_ROWS + 2) 
             * (NUMBER_OF_COLUMNS + 2) * sizeof(int))) == NULL),
-      "malloc(our_current_grid)", 0);
-  exit_if(((our_next_grid = (int**)malloc((NUMBER_OF_ROWS + 2) 
+      "malloc(current_grid)", 0);
+  exit_if(((next_grid = (int**)malloc((NUMBER_OF_ROWS + 2) 
             * (NUMBER_OF_COLUMNS + 2) * sizeof(int))) == NULL),
-      "malloc(our_next_grid)", 0);
-  for(our_current_row = 0; our_current_row <= NUMBER_OF_ROWS + 1;
-      our_current_row++)
+      "malloc(next_grid)", 0);
+  for(current_row = 0; current_row <= NUMBER_OF_ROWS + 1;
+      current_row++)
   {
-    exit_if(((our_current_grid[our_current_row]
+    exit_if(((current_grid[current_row]
             = (int*)malloc((NUMBER_OF_COLUMNS + 2) * sizeof(int))) 
-          == NULL), "malloc(our_current_grid[some_row])", 0);
-    exit_if(((our_next_grid[our_current_row]
+          == NULL), "malloc(current_grid[some_row])", 0);
+    exit_if(((next_grid[current_row]
             = (int*)malloc((NUMBER_OF_COLUMNS + 2) * sizeof(int)))
-          == NULL), "malloc(our_next_grid[some_row])", 0);
+          == NULL), "malloc(next_grid[some_row])", 0);
   }
 
   srandom(time(NULL));
 
-  /* VII.  Initialize the grid (each cell gets a random state) */
-  for(our_current_row = 1; our_current_row <= NUMBER_OF_ROWS;
-      our_current_row++)
+  /* Initialize the grid (each cell gets a random state) */
+  for(current_row = 1; current_row <= NUMBER_OF_ROWS;
+      current_row++)
   {
-    for(my_current_column = 1; my_current_column <= NUMBER_OF_COLUMNS;
-        my_current_column++)
+    for(current_column = 1; current_column <= NUMBER_OF_COLUMNS;
+        current_column++)
     {
-      our_current_grid[our_current_row][my_current_column] =
+      current_grid[current_row][current_column] =
         random() % (ALIVE + 1);
     }
   }
 
-  /* VIII.  Determine the process with the next-lowest rank */
+  /* Determine the process with the next-lowest rank */
 
-  /* IX.  Determine the process with the next-highest rank */
+  /* Determine the process with the next-highest rank */
 
-  /* X.  Run the simulation for the specified number of time steps */
+  /* Run the simulation for the specified number of time steps */
   for(current_time_step = 0; current_time_step <= NUMBER_OF_TIME_STEPS - 1;
       current_time_step++)
   {
-    // MPI commands removed for the OpenMP version
-    /* X.A.  Set up the ghost rows */
-    /* X.A.1.  Send our second-from-the-top row to the process with the
-     *  next-lowest rank */
-
-    /* X.A.2.  Send our second-from-the-bottom row to the process 
-     *  with the next-highest rank */
-
-    /* X.A.3.  Receive our bottom row from the process with the 
-     *  next-highest rank */
-
-    /* X.A.4.  Receive our top row from the process with the
-     *  next-lowest rank */
-    for(my_current_column = 0;
-        my_current_column <= NUMBER_OF_COLUMNS + 1;
-        my_current_column++)
+    for(current_column = 0;
+        current_column <= NUMBER_OF_COLUMNS + 1;
+        current_column++)
     {
-      /* X.A.1.  Set our top row to be the same as our second-to-last 
-       *  row */
-      our_current_grid[0][my_current_column]
-        = our_current_grid[NUMBER_OF_ROWS][my_current_column];
+      /* Set the top row to be the same as the second-to-last row */
+      current_grid[0][current_column]
+        = current_grid[NUMBER_OF_ROWS][current_column];
 
-      /* X.A.2.  Set our bottom row to be the same as our 
-       *  second-to-top row */
-      our_current_grid[NUMBER_OF_ROWS + 1][my_current_column]
-        = our_current_grid[1][my_current_column];
+      /* Set the bottom row to be the same as the second-to-top row */
+      current_grid[NUMBER_OF_ROWS + 1][current_column]
+        = current_grid[1][current_column];
     }
 
-    /* X.B.  Set up the ghost columns */
-    for(our_current_row = 0; our_current_row <= NUMBER_OF_ROWS + 1;
-        our_current_row++)
+    /* Set up the ghost columns */
+    for(current_row = 0; current_row <= NUMBER_OF_ROWS + 1;
+        current_row++)
     {
-      /* X.B.1.  The left ghost column is the same as the farthest-right,
-       *  non-ghost column */
-      our_current_grid[our_current_row][0] =
-        our_current_grid[our_current_row][NUMBER_OF_COLUMNS];
+      /* The left ghost column is the same as the farthest-right, non-ghost
+         column */
+      current_grid[current_row][0] =
+        current_grid[current_row][NUMBER_OF_COLUMNS];
 
-      /* X.B.2.  The right ghost column is the same as the farthest-left,
-       *  non-ghost column */
-      our_current_grid[our_current_row][NUMBER_OF_COLUMNS + 1] =
-        our_current_grid[our_current_row][1];
+      /* The right ghost column is the same as the farthest-left, non-ghost
+         column */
+      current_grid[current_row][NUMBER_OF_COLUMNS + 1] =
+        current_grid[current_row][1];
     }
 
-    /* X.C.  Display our current grid */
-#ifdef SHOW_RESULTS        
-
+    /* Display the current grid */
     printf("Time Step %d:\n", current_time_step);
-    for(our_current_row = 0; our_current_row <= NUMBER_OF_ROWS + 1;
-        our_current_row++)
+    for(current_row = 0; current_row <= NUMBER_OF_ROWS + 1;
+        current_row++)
     {
-      if(our_current_row == 1)
+      if(current_row == 1)
       {
-        for(my_current_column = 0;
-            my_current_column <= NUMBER_OF_COLUMNS + 1 + 2;
-            my_current_column++)
+        for(current_column = 0;
+            current_column <= NUMBER_OF_COLUMNS + 1 + 2;
+            current_column++)
         {
           printf("- ");
         }
         printf("\n");
       }
 
-      for(my_current_column = 0;
-          my_current_column <= NUMBER_OF_COLUMNS + 1; 
-          my_current_column++)
+      for(current_column = 0;
+          current_column <= NUMBER_OF_COLUMNS + 1; 
+          current_column++)
       {
-        if(my_current_column == 1)
+        if(current_column == 1)
         {
           printf("| ");
         }
 
-        printf("%d ", our_current_grid[our_current_row]
-            [my_current_column]);
+        printf("%d ", current_grid[current_row]
+            [current_column]);
 
-        if(my_current_column == NUMBER_OF_COLUMNS)
+        if(current_column == NUMBER_OF_COLUMNS)
         {
           printf("| ");
         }
       }
       printf("\n");
 
-      if(our_current_row == NUMBER_OF_ROWS)
+      if(current_row == NUMBER_OF_ROWS)
       {
-        for(my_current_column = 0;
-            my_current_column <= NUMBER_OF_COLUMNS + 1 + 2;
-            my_current_column++)
+        for(current_column = 0;
+            current_column <= NUMBER_OF_COLUMNS + 1 + 2;
+            current_column++)
         {
           printf("- ");
         }
@@ -257,98 +236,91 @@ int main(int argc, char **argv)
       }
     }
 
-#endif
-
-    /* X.D.  Determine our next grid -- for each row, do the following: */
-    for(our_current_row = 1; our_current_row <= NUMBER_OF_ROWS;
-        our_current_row++)
+    /* Determine the next grid -- for each row, do the following: */
+    for(current_row = 1; current_row <= NUMBER_OF_ROWS;
+        current_row++)
     {
-      /* X.D.1.  For each column, spawn threads to do the following: */
-      for(my_current_column = 1; my_current_column <= NUMBER_OF_COLUMNS;
-          my_current_column++)
+      /* For each column, do the following: */
+      for(current_column = 1; current_column <= NUMBER_OF_COLUMNS;
+          current_column++)
       {
-        /* X.D.1.a.  Initialize the count of ALIVE neighbors to 0 */
-        my_number_of_alive_neighbors = 0;
+        /* Initialize the count of ALIVE neighbors to 0 */
+        number_of_alive_neighbors = 0;
 
-        /* X.D.1.b.  For each row of the cell's neighbors, do the
-         *  following: */
-        for(my_neighbor_row = our_current_row - 1;
-            my_neighbor_row <= our_current_row + 1;
-            my_neighbor_row++)
+        /* For each row of the cell's neighbors, do the following: */
+        for(neighbor_row = current_row - 1;
+            neighbor_row <= current_row + 1;
+            neighbor_row++)
         {
-          /* X.D.1.b.i.  For each column of the cell's neighbors, do
-           *  the following: */
-          for(my_neighbor_column = my_current_column - 1;
-              my_neighbor_column <= my_current_column + 1;
-              my_neighbor_column++)
+          /* For each column of the cell's neighbors, do the following: */
+          for(neighbor_column = current_column - 1;
+              neighbor_column <= current_column + 1;
+              neighbor_column++)
           {
-            /* X.D.1.b.i.I.  If the neighbor is not the cell itself,
-             *  and the neighbor is ALIVE, do the following: */
-            if((my_neighbor_row != our_current_row
-                  || my_neighbor_column != my_current_column)
-                && (our_current_grid[my_neighbor_row]
-                  [my_neighbor_column] == ALIVE))
+            /* If the neighbor is not the cell itself, and the neighbor is
+               ALIVE, do the following: */
+            if((neighbor_row != current_row
+                  || neighbor_column != current_column)
+                && (current_grid[neighbor_row]
+                  [neighbor_column] == ALIVE))
             {
-              /* X.D.1.b.i.I.A.  Add 1 to the count of the 
-               *  number of ALIVE neighbors */
-              my_number_of_alive_neighbors++;
+              /* Add 1 to the count of the number of ALIVE neighbors */
+              number_of_alive_neighbors++;
             }
           }
         }
 
-        /* X.D.1.c.  Apply Rule 1 of Conway's Game of Life */
-        if(my_number_of_alive_neighbors < 2)
+        /* Apply Rule 1 of Conway's Game of Life */
+        if(number_of_alive_neighbors < 2)
         {
-          our_next_grid[our_current_row][my_current_column] = DEAD;
+          next_grid[current_row][current_column] = DEAD;
         }
 
-        /* X.D.1.d.  Apply Rule 2 of Conway's Game of Life */
-        if(our_current_grid[our_current_row][my_current_column] == ALIVE
-            && (my_number_of_alive_neighbors == 2
-              || my_number_of_alive_neighbors == 3))
+        /* Apply Rule 2 of Conway's Game of Life */
+        if(current_grid[current_row][current_column] == ALIVE
+            && (number_of_alive_neighbors == 2
+              || number_of_alive_neighbors == 3))
         {
-          our_next_grid[our_current_row][my_current_column] = ALIVE;
+          next_grid[current_row][current_column] = ALIVE;
         }
 
-        /* X.D.1.e.  Apply Rule 3 of Conway's Game of Life */
-        if(my_number_of_alive_neighbors > 3)
+        /* Apply Rule 3 of Conway's Game of Life */
+        if(number_of_alive_neighbors > 3)
         {
-          our_next_grid[our_current_row][my_current_column] = DEAD;
+          next_grid[current_row][current_column] = DEAD;
         }
 
-        /* X.D.1.f.  Apply Rule 4 of Conway's Game of Life */
-        if(our_current_grid[our_current_row][my_current_column] == DEAD
-            && my_number_of_alive_neighbors == 3)
+        /* Apply Rule 4 of Conway's Game of Life */
+        if(current_grid[current_row][current_column] == DEAD
+            && number_of_alive_neighbors == 3)
         {
-          our_next_grid[our_current_row][my_current_column] = ALIVE;
+          next_grid[current_row][current_column] = ALIVE;
         }
       }
     }
 
-    /* X.E.  Spawn threads to copy the next grid into the current grid */
-    for(our_current_row = 1; our_current_row <= NUMBER_OF_ROWS;
-        our_current_row++)
+    /* Copy the next grid into the current grid */
+    for(current_row = 1; current_row <= NUMBER_OF_ROWS;
+        current_row++)
     {
-      for(my_current_column = 1; my_current_column <= NUMBER_OF_COLUMNS;
-          my_current_column++)
+      for(current_column = 1; current_column <= NUMBER_OF_COLUMNS;
+          current_column++)
       {
-        our_current_grid[our_current_row][my_current_column] =
-          our_next_grid[our_current_row][my_current_column];
+        current_grid[current_row][current_column] =
+          next_grid[current_row][current_column];
       }
     }
   }
 
-  /* XI.  Deallocate data structures */
-  for(our_current_row = NUMBER_OF_ROWS + 1; our_current_row >= 0;
-      our_current_row--)
+  /* Deallocate data structures */
+  for(current_row = NUMBER_OF_ROWS + 1; current_row >= 0;
+      current_row--)
   {
-    free(our_next_grid[our_current_row]);
-    free(our_current_grid[our_current_row]);
+    free(next_grid[current_row]);
+    free(current_grid[current_row]);
   }
-  free(our_next_grid);
-  free(our_current_grid);
-
-  /* XII.  Finalize the distributed memory environment */
+  free(next_grid);
+  free(current_grid);
 
   return 0;
 }
