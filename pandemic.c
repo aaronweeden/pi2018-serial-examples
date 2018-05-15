@@ -25,7 +25,6 @@ int main(int argc, char** argv)
   int new_num_infected = 0;
   int num_people = 50;
   int person1 = 0;
-  int current_infected_person = 0;
   int num_init_infected = 1;
   int x = 0;
   int y = 0;
@@ -184,18 +183,18 @@ int main(int argc, char** argv)
   for(current_day = 0; current_day < num_days; current_day++)
   {
     /* Determine infected x locations and infected y locations */
-    current_infected_person = 0;
+    i = 0;
     for(person1 = 0; person1 < num_people; person1++)
     {
       if(states[person1] == INFECTED)
       {
-        infected_xs[current_infected_person] = xs[person1];
-        infected_ys[current_infected_person] = ys[person1];
-        current_infected_person++;
+        infected_xs[i] = xs[person1];
+        infected_ys[i] = ys[person1];
+        i++;
       }
     }
 
-    /* Displays a graphic of the current day */
+    /* Display a graphic of the current day */
     for(y = 0; y < env_height; y++)
     {
       for(x = 0; x < env_width; x++)
@@ -233,7 +232,7 @@ int main(int argc, char** argv)
          * in the y dimension */
         y_dir = (random() % 3) - 1;
 
-        /* If the person will remain in the bounds of the environment after 
+        /* If the person will remain in the bounds of the environment after
          * moving, then */
         if((xs[i] + x_dir >= 0) &&
            (xs[i] + x_dir < env_width) &&
