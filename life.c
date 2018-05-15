@@ -248,22 +248,28 @@ int main(int argc, char **argv)
         }
 
         /* Apply Rule 2 of Conway's Game of Life */
-        if(current_grid[row][col] == ALIVE &&
+        else if(current_grid[row][col] == ALIVE &&
            (num_alive_neighbors == 2 || num_alive_neighbors == 3))
         {
           next_grid[row][col] = ALIVE;
         }
 
         /* Apply Rule 3 of Conway's Game of Life */
-        if(num_alive_neighbors > 3)
+        else if(num_alive_neighbors > 3)
         {
           next_grid[row][col] = DEAD;
         }
 
         /* Apply Rule 4 of Conway's Game of Life */
-        if(current_grid[row][col] == DEAD && num_alive_neighbors == 3)
+        else if(current_grid[row][col] == DEAD && num_alive_neighbors == 3)
         {
           next_grid[row][col] = ALIVE;
+        }
+
+        /* No rule applies; keep the same state */
+        else
+        {
+          next_grid[row][col] = current_grid[row][col];
         }
       }
     }
