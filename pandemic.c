@@ -276,9 +276,9 @@ int main(int argc, char** argv)
         }
 
         /* If there is at least one infected person nearby, and a random number
-         *  less than 100 is less than or equal to the contagiousness factor,
+         *  less than 100 is less than the contagiousness factor,
          *  then */
-        if(infected_nearby >= 1 && (random() % 100) <= contagiousness_factor)
+        if(infected_nearby >= 1 && (random() % 100) < contagiousness_factor)
         {
           /* Change person1's state to infected */
           states[person1] = INFECTED;
