@@ -61,7 +61,7 @@ int assert_minimum_value(char which_value[16], int actual_value,
 /******************************************************************************
  * Print a function name and exit if the specified boolean expression is true *
  ******************************************************************************/
-void exit_if(int boolean_expression, char function_name[32], int OUR_RANK)
+void exit_if(int boolean_expression, char function_name[32], int my_rank)
 {
   if(boolean_expression)
   {
